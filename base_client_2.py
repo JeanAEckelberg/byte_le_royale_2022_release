@@ -17,6 +17,7 @@ class Client(UserClient):
     def __init__(self):
         super().__init__()
         self.prev_location = (0, 0)
+        self.angle = -1
 
     def team_name(self):
         """
@@ -46,15 +47,19 @@ class Client(UserClient):
             object_in_front = partition_grid.find_object_coordinates(forward_position[0], forward_position[1])
         if self.prev_location != shooter.hitbox.middle:
             # If the player moved last turn, move them towards the center
-            angle = angle_to_point(shooter, game_board.center)
-            actions.set_move(int(angle), shooter.max_speed)
+            self.angle = angle_to_point(shooter, game_board.center)
+            actions.set_move(int(self.angle), shooter.max_speed)
             self.prev_location = shooter.hitbox.middle
         elif object_in_front or 0 <= forward_position[0] <= 500 or 0 <= forward_position[1] <= 500 \
                 and self.prev_location != game_board.center:
             # if there is something in front of the player, but the player isn't already in the center,
             # turn 90 degrees and try to move again
-            actions.set_move((shooter.heading + 90) % 360, shooter.max_speed)
+            self.angle += 90
+
+            actions.set_move((self.angle) % 360, shooter.max_speed)
+            #print(f"POSITION: {shooter.hitbox.position} ANGLE : {self.angle}")
         # if their is another player, shoot at it
         shooters = list(filter(lambda obj: obj.object_type == ObjectType.shooter, map_objects))
         if len(shooters) > 1:
             actions.set_shoot(round(angle_to_point(shooter, shooters[0].hitbox.middle)))
+
