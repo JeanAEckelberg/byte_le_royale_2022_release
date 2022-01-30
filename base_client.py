@@ -218,6 +218,8 @@ class Client(UserClient):
     path = None
 
     def go_to_mid(self, shooter, actions, board, map):
+        print("start")
+        i=0
         if self.path is None:
             self.path = []
             x, y = shooter.hitbox.middle
@@ -226,31 +228,39 @@ class Client(UserClient):
             dy = 1 if y<ty else -1
             turn = -1
             while(True):
+                print(i)
+                i+=1
+
                 x+=dx
                 ded=False
-                while(Math.abs(y-ty)<25):
+                z=0
+                print(" Y")
+                while(abs(y-ty)<25):
+                    print(" "+str(z))
+                    z+=1
                     y+=dy
                     if(map[x][y]):
                         ded=True
                         break
+                print("  DED?")
                 if(not ded):
                     turn = x
                     break
             turned=False
-            while Math.abs(y-ty)>shooter.max_speed:
+            while abs(y-ty)>shooter.max_speed:
                 if(turned):
-                    y+=dx*min(shooter.max_speed, Math.abs(x-turn))
+                    y+=dx*min(shooter.max_speed, abs(x-turn))
                     if(dy>0):
                         heading=270
                     else:
                         heading=90
                 else:
-                    x+=min(shooter.max_speed, Math.abs(x-turn))
+                    x+=min(shooter.max_speed, abs(x-turn))
                     if(dx>0):
                         heading=0
                     else:
                         heading=180
-                speed = min(shooter.max_speed, Math.abs(x-turn))
+                speed = min(shooter.max_speed, abs(x-turn))
                 #build path here, remember to change x and y
                 self.path.append([heading, speed])
         else:
@@ -314,8 +324,8 @@ class Client(UserClient):
         if forward_position[0] < game_board.width and forward_position[1] < game_board.height:
             # this will get the object that is in front of the player if there is one
             object_in_front = partition_grid.find_object_coordinates(forward_position[0], forward_position[1])
-        if not hitMid:
-            go_to_mid(shooter, actions, game_board, map)
+        if not self.hitMid:
+            self.go_to_mid(shooter, actions, game_board, map)
         if self.prev_location != shooter.hitbox.middle:
             # If the player moved last turn, move them towards the center
             pass
