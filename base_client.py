@@ -2,6 +2,8 @@ from game.client.user_client import UserClient
 from game.common.enums import *
 import math
 
+# from PIL import Image, ImageDraw
+
 ######################################################
 # imports for type hints
 from game.common.action import Action
@@ -227,47 +229,66 @@ class Client(UserClient):
             dx = 1 if x<tx else -1
             dy = 1 if y<ty else -1
             turn = -1
+            ready=False
+            tempx = x
             while(True):
-                print(i)
+                # print(i)
                 i+=1
 
                 x+=dx
                 ded=False
                 z=0
-                print(" Y")
-                while(abs(y-ty)<25):
+                # print(" Y")
+                temp=y
+                while(abs(temp-ty)>25):
                     print(" "+str(z))
                     z+=1
-                    y+=dy
-                    if(map[x][y]):
+                    temp+=dy
+                    if(map[int(x)][int(temp)]):
                         ded=True
                         break
-                print("  DED?")
-                if(not ded):
+                # print("  DED?")
+                if(ded):
+                    print("ready")
+                    ready=True
+                if((not ded) and ready):
                     turn = x
                     break
             turned=False
+            print(turn)
+            print(str(y)+" "+str(ty))
+            x = tempx
+            turn+=25*dx
             while abs(y-ty)>shooter.max_speed:
+                print(str(abs(y-ty))+" "+str(abs(x-tx)))
                 if(turned):
-                    y+=dx*min(shooter.max_speed, abs(x-turn))
+                    y+=dy*shooter.max_speed
+                    speed = shooter.max_speed
                     if(dy>0):
-                        heading=270
-                    else:
                         heading=90
+                    else:
+                        heading=270
                 else:
-                    x+=min(shooter.max_speed, abs(x-turn))
+                    x+=min(shooter.max_speed, abs(x-turn))*dx
+                    speed = min(shooter.max_speed, abs(x - turn))
+                    print(min(shooter.max_speed, abs(x-turn)))
+                    print("X - ")
+                    if(abs(x-turn)<=shooter.max_speed):
+                        turned=True
                     if(dx>0):
                         heading=0
                     else:
                         heading=180
-                speed = min(shooter.max_speed, abs(x-turn))
+
                 #build path here, remember to change x and y
                 self.path.append([heading, speed])
         else:
-            actions.set_move(self.path[0][0], self.path[0][1])
-            self.path=self.path[1:]
             if len(self.path)==0:
                 self.hitMid=True
+                return
+            print(str(self.path[0][0])+","+str(self.path[0][1]))
+            actions.set_move(int(self.path[0][0]), int(self.path[0][1]))
+            self.path=self.path[1:]
 
     def cardinal_move(self, heading, speed, actions, map, shooter):
         self.update_prev(shooter)
@@ -315,11 +336,8 @@ class Client(UserClient):
             for x in range(int(wall.hitbox.top_left[0]), int(wall.hitbox.bottom_right[0])):
                 for y in range(int(wall.hitbox.top_left[1]), int(wall.hitbox.bottom_right[1])):
                     map[x][y]=True
-        # for x in range(len(map)):
-        #     s=""
-        #     for y in range(len(map[x])):
-        #         s+="#" if map[x][y] else " "
-        #     print(s)
+
+
 
         if forward_position[0] < game_board.width and forward_position[1] < game_board.height:
             # this will get the object that is in front of the player if there is one
