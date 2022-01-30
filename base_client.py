@@ -218,20 +218,46 @@ class Client(UserClient):
     path = None
 
     def go_to_mid(self, shooter, actions, board, map):
-        if path is None:
-            path = []
+        if self.path is None:
+            self.path = []
             x, y = shooter.hitbox.middle
             tx, ty = board.center
+            dx = 1 if x<tx else -1
+            dy = 1 if y<ty else -1
+            turn = -1
+            while(True):
+                x+=dx
+                ded=False
+                while(Math.abs(y-ty)<25):
+                    y+=dy
+                    if(map[x][y]):
+                        ded=True
+                        break
+                if(not ded):
+                    turn = x
+                    break
+            turned=False
             while((x-tx)**2+(y-ty)**2)**.5>shooter.max_speed:
-                heading = 90
-                speed = 25
+                if(turned):
+                    y+=dx*min(shooter.max_speed, Math.abs(x-turn))
+                    if(dy>0):
+                        heading=270
+                    else:
+                        heading=90
+                else:
+                    x+=min(shooter.max_speed, Math.abs(x-turn))
+                    if(dx>0):
+                        heading=0
+                    else:
+                        heading=180
+                speed = min(shooter.max_speed, Math.abs(x-turn))
                 #build path here, remember to change x and y
-                path.append(heading, speed)
+                self.path.append([heading, speed])
         else:
-            actions.set_move(path[0][0], path[0][1])
-            path=path[1:]
-            if len(path)==0:
-                hitMid=True
+            actions.set_move(self.path[0][0], self.path[0][1])
+            self.path=self.path[1:]
+            if len(self.path)==0:
+                self.hitMid=True
 
     def cardinal_move(self, heading, speed, actions, map, shooter):
         self.update_prev(shooter)
