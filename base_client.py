@@ -118,7 +118,7 @@ class Client(UserClient):
             indexOfInRange = 0
             for i in range(len(guns)):
                   print(distance_tuples( game_board.center, guns[i].hitbox.middle))
-                  if( distance_tuples( game_board.center, guns[i].hitbox.middle) < game_board.cirlce_radius ):
+                  if( distance_tuples( game_board.center, guns[i].hitbox.middle) < game_board.circle_radius ):
                       indexOfInRange = i
                       break
                   indexOfInRange = -1
@@ -135,7 +135,7 @@ class Client(UserClient):
                 indexOfInRange = 0
                 for i in range(len(upgrades)):
                       print(distance_tuples( game_board.center, upgrades[i].hitbox.middle))
-                      if( distance_tuples( game_board.center, upgrades[i].hitbox.middle) < game_board.cirlce_radius ):
+                      if( distance_tuples( game_board.center, upgrades[i].hitbox.middle) < game_board.circle_radius ):
                           indexOfInRange = i
                           break
                       indexOfInRange = -1
@@ -151,7 +151,7 @@ class Client(UserClient):
             indexOfInRange = 0
             for i in range(len(money)):
                   print(distance_tuples( game_board.center, money[i].hitbox.middle))
-                  if( distance_tuples( game_board.center, money[i].hitbox.middle) < game_board.cirlce_radius ):
+                  if( distance_tuples( game_board.center, money[i].hitbox.middle) < game_board.circle_radius ):
                       indexOfInRange = i
                       break
                   indexOfInRange = -1
@@ -163,7 +163,7 @@ class Client(UserClient):
 >>>>>>> master
 
 
-    def idle_tasks(self, shooter: Shooter, actions, partition_grid):
+    def idle_tasks(self, shooter: Shooter, actions, partition_grid, game_board):
         # Stuff to do if there's no clear and present danger
         # Reload?
         # Shield?
@@ -285,6 +285,21 @@ class Client(UserClient):
 >>>>>>> master
         return
 
+    def in_front(self, heading):
+        if heading == 0:
+            x = 0
+            y = -10
+        elif heading == 90:
+            x = 10
+            y = 0
+        elif heading == 180:
+            x = -10
+            y = 0
+        else:
+            x = 0
+            y = 10
+        return (x,y)
+
     # This is where your AI will decide what to do
     def take_turn(self, turn, actions: Action, game_board, partition_grid: PartitionGrid, shooter: Shooter) -> None:
         """
@@ -300,28 +315,42 @@ class Client(UserClient):
         # This is a tuple that represents the position 1 unit in front of where the player
         forward_position = (shooter.hitbox.middle[0] + shooter.hitbox.width + math.cos(math.radians(shooter.heading)),
                             shooter.hitbox.middle[1] + shooter.hitbox.height + math.sin(math.radians(shooter.heading)))
+        print(shooter.heading)
+        facing = self.in_front(shooter.heading)
         object_in_front = None
         if forward_position[0] < game_board.width and forward_position[1] < game_board.height:
             # this will get the object that is in front of the player if there is one
-            object_in_front = partition_grid.find_object_coordinates(forward_position[0], forward_position[1])
+            object_in_front = partition_grid.find_object_coordinates(shooter.hitbox.middle[0]+facing[0], shooter.hitbox.middle[1]+facing[1])
         if self.prev_location != shooter.hitbox.middle:
             # If the player moved last turn, move them towards the center
             angle = angle_to_point(shooter, game_board.center)
-            self.cardinal_move(angle, shooter.max_speed, actions, partition_grid,
-                               shooter)  # actions.set_move(angle, shooter.max_speed) # self.safe_move(int(angle), shooter.max_speed, partition_grid, shooter)
+            self.cardinal_move(angle, shooter.max_speed, actions, partition_grid, shooter)
             self.prev_location = shooter.hitbox.middle
         elif object_in_front or 0 <= forward_position[0] <= 500 or 0 <= forward_position[1] <= 500 \
                 and self.prev_location != game_board.center:
             # if there is something in front of the player, but the player isn't already in the center,
             # turn 90 degrees and try to move again
-            self.cardinal_move((shooter.heading + 90) % 360, shooter.max_speed, actions, partition_grid,
-                               shooter)  # actions.set_move((shooter.heading+90) % 360, shooter.max_speed) # self.safe_move((shooter.heading + 90) % 360, shooter.max_speed, partition_grid, shooter)
-            # print(f"POSITION: {shooter.hitbox.position} ANGLE : {shooter.heading + 90}")
+
+            if object_in_front != False:
+                print(object_in_front.Health)
+            else:
+                print(object_in_front)
+                actions.set_move(shooter.heading,shooter.max_speed)
+
+            if not self.reload_needed(shooter):
+                actions.set_shoot(shooter.heading)
+            else:
+                actions.set_action(ActionType.reload)
+
+
+            # self.cardinal_move((shooter.heading + 90) % 360, shooter.max_speed, actions, partition_grid, shooter)
+
+
         # if their is another player, shoot at it
         shooters = list(filter(lambda obj: obj.object_type == ObjectType.shooter, map_objects))
         if distance_tuples(shooter.hitbox.middle, game_board.center) < shooter.max_speed*2:
              # print("idle")
-             self.idle_tasks(shooter, actions, partition_grid)
+             self.idle_tasks(shooter, actions, partition_grid, game_board)
         if len(shooters) > 1 and distance_tuples(shooter.hitbox.middle, shooters[0].hitbox.middle):
             # if(self.check_threat() >= 0):
             # print("here")
