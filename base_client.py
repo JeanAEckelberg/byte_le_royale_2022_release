@@ -237,7 +237,7 @@ class Client(UserClient):
                     turn = x
                     break
             turned=False
-            while((x-tx)**2+(y-ty)**2)**.5>shooter.max_speed:
+            while Math.abs(y-ty)>shooter.max_speed:
                 if(turned):
                     y+=dx*min(shooter.max_speed, Math.abs(x-turn))
                     if(dy>0):
