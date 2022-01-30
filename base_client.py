@@ -16,6 +16,7 @@ class Client(UserClient):
     dict = {"Money": 0.3, "Backpack": 0.1, "Boots": 0.5, "GunLv1": 0.75, "GunLv2": 1, "GunLv3": 1.5, "Teleport": 0,
             "Speed Boost": 0.2, "Health Pack": 0, "Shield": 0.7, "Radar": 0.8, "Grenade": 0.4}
     prev_pos = {"prev1": (0, 0), "prev2": (1, 1), "prev3": (2, 2), "prev4": (3, 3)}
+    hitMid = False
 
     # Variables and info you want to save between turns go here
     def __init__(self):
@@ -29,7 +30,7 @@ class Client(UserClient):
         """
         return '$10 EBay Bot'
 
-    def get_ememy_health(self, enemy):
+    def get_enemy_health(self, enemy):
         return enemy.health
 
     def get_enemy_primary(self, enemy):
@@ -45,44 +46,6 @@ class Client(UserClient):
             enemy).damage * max(self.get_enemy_primary(enemy).fire_rate, 1)
 
     def reload_needed(self, shooter: Shooter):
-<<<<<<< HEAD
-        return shooter.primary_gun.mag_ammo <= 1
-
-    def reload_or_shoot(self, shooter: Shooter, actions: Action, enemy):
-        if (self.reload_needed(shooter) or shooter.primary_gun.range<=player_utils.distance(shooter.hitbox.middle, enemy.hitbox.middle)) and not shooter.has_empty_slot("guns"):
-            actions.cycle_primary()
-
-        elif self.reload_needed(shooter) and shooter.has_empty_slot("guns"):
-            actions.set_action(ActionType.reload)
-            return
-        actions.set_shoot(round(angle_to_point(shooter, enemy.hitbox.middle) - 90))
-        return
-
-    def find_items(self, shooter: Shooter, actions, map_objects):
-        gunlevel = shooter.primary_gun.level
-
-        guns = list(filter(lambda obj: obj.object_type == ObjectType.gun, map_objects))
-        if guns[0] != None and guns[0].level >= gunlevel:
-            self.update_prev(shooter)
-
-            actions.set_move(round(angle_to_point(shooter, guns[0].hitbox.middle)), min(round(distance_tuples(shooter.hitbox.middle, guns[0].hitbox.middle)),shooter.max_speed))
-            # print("moved")
-            return
-        if shooter.has_empty_slot("upgrades"):
-            upgrades = list(filter(lambda obj: obj.object_type == ObjectType.upgrade, map_objects))
-            if upgrades[0] != None:
-                self.update_prev(shooter)
-                actions.set_move(round(angle_to_point(shooter, upgrades[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, upgrades[0].hitbox.middle)),shooter.max_speed))
-                # print("moved")
-                return
-
-        money = list(filter(lambda obj: obj.object_type == ObjectType.money, map_objects))
-        if money[0] != None:
-            self.update_prev(shooter)
-            actions.set_move(round(angle_to_point(shooter, money[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, money[0].hitbox.middle)),shooter.max_speed))
-            # print("moved")
-        return
-=======
         try:
             return shooter.primary_gun.mag_ammo <= 1
         except:
@@ -160,7 +123,6 @@ class Client(UserClient):
                 actions.set_move(round(angle_to_point(shooter, money[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, money[indexOfInRange].hitbox.middle)),shooter.max_speed))
                 # print("moved")
                 return
->>>>>>> master
 
 
     def idle_tasks(self, shooter: Shooter, actions, partition_grid):
@@ -205,11 +167,7 @@ class Client(UserClient):
             #     actions.set_action(ActionType.shop)
 
         # print("Finding Items")
-<<<<<<< HEAD
-        self.find_items(shooter, actions,map_objects)
-=======
         self.find_items(shooter, actions,map_objects,game_board)
->>>>>>> master
 
         return
 
@@ -254,6 +212,26 @@ class Client(UserClient):
         self.prev_pos['prev1'] = shooter.hitbox.middle
         return
 
+    def mov_dist(self):
+        return
+
+    path = None
+
+    def go_to_mid(self, shooter, actions, board, map):
+        if path is None:
+            #build path
+            path = []
+            x, y = shooter.hitbox.middle
+            tx, ty = board.center
+            while((x-tx)**2+(y-ty)**2)**.5>shooter.max_speed:
+                heading = 90
+                speed = 25
+                path.append(heading, speed)
+        else:
+            actions.set_move(path[0][0], path[0][1])
+            path=path[1:]
+            if len(path)==0:
+                hitMid=True
 
     def cardinal_move(self, heading, speed, actions, map, shooter):
         self.update_prev(shooter)
@@ -262,16 +240,6 @@ class Client(UserClient):
         secondary = math.ceil(heading / 90) * 90 if round(heading / 90) * 90 == math.floor(
             heading / 90) * 90 else math.floor(heading / 90) * 90
         if (secondary == aim): secondary += 90
-<<<<<<< HEAD
-        first = self.move_distance(aim, speed, map, shooter)
-        second = self.move_distance(secondary, speed, map, shooter)
-        aim%=360
-        secondary%=360
-        if self.prev_pos['prev1'] == self.prev_pos['prev3'] or self.prev_pos['prev1'] == self.prev_pos['prev4']:
-            actions.set_move(((aim if first < second else secondary) + 180) % 360, speed)
-        else:
-            actions.set_move(aim if first >= second else secondary, speed)
-=======
         aim%=360
         secondary%=360
         first = self.move_distance(aim, speed, map, shooter)
@@ -282,7 +250,6 @@ class Client(UserClient):
         else:
             print(str(heading)+": S"+str(aim)+" "+str(secondary))
             actions.set_move(aim, speed)#if first >= second else secondary, speed)
->>>>>>> master
         return
 
     # This is where your AI will decide what to do
@@ -295,21 +262,40 @@ class Client(UserClient):
         :param world:       Generic world information
         :param shooter:      This is your in-game character object
         """
+
         # This is the list that contains all the objects on the map your player can see
         map_objects = partition_grid.get_all_objects()
         # This is a tuple that represents the position 1 unit in front of where the player
         forward_position = (shooter.hitbox.middle[0] + shooter.hitbox.width + math.cos(math.radians(shooter.heading)),
                             shooter.hitbox.middle[1] + shooter.hitbox.height + math.sin(math.radians(shooter.heading)))
         object_in_front = None
+
+        map=[]
+        for x in range(500):
+            map.append([])
+            for y in range(500):
+                map[x].append(False)
+        for wall in list(filter(lambda obj: obj.object_type == ObjectType.door or obj.object_type == ObjectType.wall, map_objects)):
+            for x in range(int(wall.hitbox.top_left[0]), int(wall.hitbox.bottom_right[0])):
+                for y in range(int(wall.hitbox.top_left[1]), int(wall.hitbox.bottom_right[1])):
+                    map[x][y]=True
+        # for x in range(len(map)):
+        #     s=""
+        #     for y in range(len(map[x])):
+        #         s+="#" if map[x][y] else " "
+        #     print(s)
+
         if forward_position[0] < game_board.width and forward_position[1] < game_board.height:
             # this will get the object that is in front of the player if there is one
             object_in_front = partition_grid.find_object_coordinates(forward_position[0], forward_position[1])
+        if not hitMid:
+            go_to_mid(shooter, actions, game_board, map)
         if self.prev_location != shooter.hitbox.middle:
             # If the player moved last turn, move them towards the center
-            angle = angle_to_point(shooter, game_board.center)
-            self.cardinal_move(angle, shooter.max_speed, actions, partition_grid,
-                               shooter)  # actions.set_move(angle, shooter.max_speed) # self.safe_move(int(angle), shooter.max_speed, partition_grid, shooter)
-            self.prev_location = shooter.hitbox.middle
+            pass
+            # self.cardinal_move(angle, shooter.max_speed, actions, partition_grid,
+            #                    shooter)  # actions.set_move(angle, shooter.max_speed) # self.safe_move(int(angle), shooter.max_speed, partition_grid, shooter)
+            # self.prev_location = shooter.hitbox.middle
         elif object_in_front or 0 <= forward_position[0] <= 500 or 0 <= forward_position[1] <= 500 \
                 and self.prev_location != game_board.center:
             # if there is something in front of the player, but the player isn't already in the center,
