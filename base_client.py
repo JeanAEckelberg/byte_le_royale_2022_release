@@ -219,13 +219,13 @@ class Client(UserClient):
 
     def go_to_mid(self, shooter, actions, board, map):
         if path is None:
-            #build path
             path = []
             x, y = shooter.hitbox.middle
             tx, ty = board.center
             while((x-tx)**2+(y-ty)**2)**.5>shooter.max_speed:
                 heading = 90
                 speed = 25
+                #build path here, remember to change x and y
                 path.append(heading, speed)
         else:
             actions.set_move(path[0][0], path[0][1])
