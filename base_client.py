@@ -49,8 +49,15 @@ class Client(UserClient):
             return shooter.primary_gun.mag_ammo <= 1
         except:
             return False
-
+    def attack_mode(self, shooter: Shooter, actions: Action, enemy):
+        range = shooter.primary_gun.range
+        distance = distance_tuples(shooter.hitbox.middle, enemy.hitbox.middle)
+        if distance > range:
+            actions.set_move(round(angle_to_point(shooter, enemy.hitbox.middle)), distance - range)
+        else:
+            self.reload_or_shoot(shooter, actions, enemy)
     def reload_or_shoot(self, shooter: Shooter, actions: Action, enemy):
+
         d1=0
         r1=0
         if shooter.primary_gun != None:
