@@ -45,6 +45,7 @@ class Client(UserClient):
             enemy).damage * max(self.get_enemy_primary(enemy).fire_rate, 1)
 
     def reload_needed(self, shooter: Shooter):
+<<<<<<< HEAD
         return shooter.primary_gun.mag_ammo <= 1
 
     def reload_or_shoot(self, shooter: Shooter, actions: Action, enemy):
@@ -81,6 +82,85 @@ class Client(UserClient):
             actions.set_move(round(angle_to_point(shooter, money[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, money[0].hitbox.middle)),shooter.max_speed))
             # print("moved")
         return
+=======
+        try:
+            return shooter.primary_gun.mag_ammo <= 1
+        except:
+            return False
+
+    def reload_or_shoot(self, shooter: Shooter, actions: Action, enemy):
+        d1=0
+        r1=0
+        if shooter.primary_gun != None:
+            r1=shooter.primary_gun.range
+            d1=min(shooter.primary_gun.mag_ammo * (shooter.primary_gun.fire_rate if shooter.primary_gun.gun_type==3 else 1), shooter.primary_gun.fire_rate)*shooter.primary_gun.damage
+        actions.cycle_primary()
+        d2=0
+        r2=0
+        if shooter.primary_gun != None:
+            r2 = shooter.primary_gun.range
+            d2 = min(shooter.primary_gun.mag_ammo * (shooter.primary_gun.fire_rate if shooter.primary_gun.gun_type == 3 else 1), shooter.primary_gun.fire_rate) * shooter.primary_gun.damage
+        rt = distance_tuples(shooter.hitbox.middle, enemy.hitbox.middle)
+        if r1 <= rt: d1 = 0
+        if r2 <= rt: d2 = 0
+        if d1 > d2:actions.cycle_primary()
+        if self.reload_needed(shooter):
+            actions.set_action(ActionType.reload)
+        elif max(d1,d2)>0:
+            actions.set_shoot(round(angle_to_point(shooter, enemy.hitbox.middle)))
+        return
+
+    def find_items(self, shooter: Shooter, actions, map_objects,game_board):
+        gunlevel = shooter.primary_gun.level
+
+        guns = list(filter(lambda obj: obj.object_type == ObjectType.gun, map_objects))
+        if guns[0] != None and guns[0].level >= gunlevel:
+            indexOfInRange = 0
+            for i in range(len(guns)):
+                  print(distance_tuples( game_board.center, guns[i].hitbox.middle))
+                  if( distance_tuples( game_board.center, guns[i].hitbox.middle) < game_board.cirlce_radius ):
+                      indexOfInRange = i
+                      break
+                  indexOfInRange = -1
+
+            if not indexOfInRange != -1:
+
+                self.update_prev(shooter)
+                actions.set_move(round(angle_to_point(shooter, guns[0].hitbox.middle)), min(round(distance_tuples(shooter.hitbox.middle, guns[indexOfInRange].hitbox.middle)),shooter.max_speed))
+                # print("moved")
+                return
+        if shooter.has_empty_slot("upgrades"):
+            upgrades = list(filter(lambda obj: obj.object_type == ObjectType.upgrade, map_objects))
+            if upgrades[0] != None:
+                indexOfInRange = 0
+                for i in range(len(upgrades)):
+                      print(distance_tuples( game_board.center, upgrades[i].hitbox.middle))
+                      if( distance_tuples( game_board.center, upgrades[i].hitbox.middle) < game_board.cirlce_radius ):
+                          indexOfInRange = i
+                          break
+                      indexOfInRange = -1
+                if not indexOfInRange != -1:
+                    self.update_prev(shooter)
+
+                    actions.set_move(round(angle_to_point(shooter, upgrades[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, upgrades[indexOfInRange].hitbox.middle)),shooter.max_speed))
+                    # print("moved")
+                    return
+
+        money = list(filter(lambda obj: obj.object_type == ObjectType.money, map_objects))
+        if money[0] != None:
+            indexOfInRange = 0
+            for i in range(len(money)):
+                  print(distance_tuples( game_board.center, money[i].hitbox.middle))
+                  if( distance_tuples( game_board.center, money[i].hitbox.middle) < game_board.cirlce_radius ):
+                      indexOfInRange = i
+                      break
+                  indexOfInRange = -1
+            if not indexOfInRange != -1:
+                self.update_prev(shooter)
+                actions.set_move(round(angle_to_point(shooter, money[0].hitbox.middle)),min(round(distance_tuples(shooter.hitbox.middle, money[indexOfInRange].hitbox.middle)),shooter.max_speed))
+                # print("moved")
+                return
+>>>>>>> master
 
 
     def idle_tasks(self, shooter: Shooter, actions, partition_grid):
@@ -125,7 +205,11 @@ class Client(UserClient):
             #     actions.set_action(ActionType.shop)
 
         # print("Finding Items")
+<<<<<<< HEAD
         self.find_items(shooter, actions,map_objects)
+=======
+        self.find_items(shooter, actions,map_objects,game_board)
+>>>>>>> master
 
         return
 
@@ -178,6 +262,7 @@ class Client(UserClient):
         secondary = math.ceil(heading / 90) * 90 if round(heading / 90) * 90 == math.floor(
             heading / 90) * 90 else math.floor(heading / 90) * 90
         if (secondary == aim): secondary += 90
+<<<<<<< HEAD
         first = self.move_distance(aim, speed, map, shooter)
         second = self.move_distance(secondary, speed, map, shooter)
         aim%=360
@@ -186,6 +271,18 @@ class Client(UserClient):
             actions.set_move(((aim if first < second else secondary) + 180) % 360, speed)
         else:
             actions.set_move(aim if first >= second else secondary, speed)
+=======
+        aim%=360
+        secondary%=360
+        first = self.move_distance(aim, speed, map, shooter)
+        second = self.move_distance(secondary, speed, map, shooter)
+        if self.prev_pos['prev1'] == self.prev_pos['prev3'] or self.prev_pos['prev1'] == self.prev_pos['prev4']:
+            print(str(heading)+": I"+str(aim)+" "+str(secondary))
+            actions.set_move(((aim if first < second else secondary) + 180) % 360, speed)
+        else:
+            print(str(heading)+": S"+str(aim)+" "+str(secondary))
+            actions.set_move(aim, speed)#if first >= second else secondary, speed)
+>>>>>>> master
         return
 
     # This is where your AI will decide what to do
